@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KazakhTTS3: Extending the Open-Source KazakhTTS2 Corpus with Synthetic Voices and a Small TTS Baseline</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #fafaf8;
+            --surface: #ffffff;
+            --text: #1a1a1a;
+            --text-secondary: #555;
+            --accent-male: #1a5276;
+            --accent-male-light: #eef4f8;
+            --accent-female: #c0392b;
+            --accent-female-light: #fdeaea;
+            --border: #e0ddd8;
+            --border-light: #eceae5;
+            --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 16px;
+        }
+        .container { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+        header {
+            padding: 60px 0 40px;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 48px;
+        }
+        h1 { font-size: 1.75rem; font-weight: 700; line-height: 1.35; color: var(--text); margin-bottom: 20px; }
+        .authors { font-size: 1.05rem; color: var(--text-secondary); margin-bottom: 8px; }
+        .links { margin-top: 20px; display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+        .links a {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 20px; border: 1.5px solid var(--accent-male); border-radius: 6px;
+            color: var(--accent-male); text-decoration: none; font-weight: 500; font-size: 0.9rem; transition: all 0.2s;
+        }
+        .links a:hover { background: var(--accent-male); color: #fff; }
+        section { margin-bottom: 48px; }
+        h2 {
+            font-size: 1.4rem; font-weight: 700; color: var(--text);
+            margin-bottom: 20px; padding-bottom: 8px; border-bottom: 2px solid var(--accent-male); display: inline-block;
+        }
+        p { margin-bottom: 16px; }
+        .abstract {
+            background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent-male);
+            padding: 24px 28px; border-radius: 0 8px 8px 0; font-size: 0.95rem; line-height: 1.75;
+        }
+        .speaker-section { margin-bottom: 40px; }
+        .speaker-name { font-size: 1.1rem; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .speaker-name.male { color: var(--accent-male); }
+        .speaker-name.female { color: var(--accent-female); }
+        .speaker-tag {
+            font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;
+            padding: 2px 8px; border-radius: 4px; font-weight: 500; letter-spacing: 0.02em;
+        }
+        .speaker-tag.male { background: var(--accent-male-light); color: var(--accent-male); }
+        .speaker-tag.female { background: var(--accent-female-light); color: var(--accent-female); }
+        table {
+            width: 100%; border-collapse: separate; border-spacing: 0;
+            background: var(--surface); border-radius: 8px; overflow: hidden;
+            box-shadow: var(--shadow); border: 1px solid var(--border);
+        }
+        thead th {
+            background: #f5f4f0; font-weight: 700; font-size: 0.85rem;
+            text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary);
+            padding: 12px 16px; text-align: center; border-bottom: 1px solid var(--border);
+        }
+        thead th.group-header-gt { background: #f0f7f0; border-right: 2px solid var(--border); font-size: 0.9rem; color: var(--text); }
+        thead th.group-header-syn { background: #f0f0f7; font-size: 0.9rem; color: var(--text); }
+        thead th.sub-gt { background: #f5faf5; }
+        thead th.sub-gt-last { background: #f5faf5; border-right: 2px solid var(--border); }
+        thead th.sub-syn { background: #f5f5fa; }
+        td.border-right { border-right: 2px solid var(--border); }
+        tbody td {
+            padding: 14px 16px; border-bottom: 1px solid var(--border-light);
+            vertical-align: middle; font-size: 0.92rem;
+        }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:hover { background: #fafaf6; }
+        .text-cell { line-height: 1.6; color: var(--text); max-width: 280px; font-size: 0.88rem; }
+        audio { width: 200px; height: 36px; }
+        footer {
+            text-align: center; padding: 40px 0; border-top: 1px solid var(--border);
+            margin-top: 48px; color: var(--text-secondary); font-size: 0.85rem;
+        }
+        @media (max-width: 768px) {
+            h1 { font-size: 1.3rem; }
+            .container { padding: 0 12px; }
+            header { padding: 40px 0 30px; }
+            audio { width: 140px; }
+            table { font-size: 0.82rem; }
+            thead th, tbody td { padding: 8px 6px; }
+            .text-cell { max-width: 160px; font-size: 0.8rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <header>
+        <h1>KazakhTTS3: Extending the Open-Source KazakhTTS2 Corpus with Synthetic Voices and a Small TTS Baseline</h1>
+        <p class="authors"><em>Anonymous submission to Interspeech 2026</em></p>
+        <!--
+        <p class="authors">Author 1, Author 2, Author 3</p>
+        <p class="affiliation">Institute of Smart Systems and Artificial Intelligence (ISSAI), Nazarbayev University</p>
+        -->
+        <div class="links">
+            <a href="#">📄 Paper</a>
+        </div>
+    </header>
+
+    <section id="abstract">
+        <h2>Abstract</h2>
+        <div class="abstract">
+            <p>
+                We present KazakhTTS3, an extension of the open-source KazakhTTS2 corpus incorporating synthetic voices
+                generated by modern TTS systems. Our corpus includes 12 diverse speakers, expanding the available
+                Kazakh speech data for text-to-speech research. We additionally propose a small TTS baseline model
+                trained on this extended corpus, demonstrating that competitive speech synthesis quality can be achieved
+                even with compact model architectures. We evaluate our system through Mean Opinion Score (MOS) listening
+                tests and provide audio samples below.
+            </p>
+        </div>
+    </section>
+
+    <section id="samples">
+        <h2>Speech Samples</h2>
+
+        <!-- AKZHOL -->
+        <div class="speaker-section" id="akzhol">
+            <div class="speaker-name male">Voice 1: Akzhol <span class="speaker-tag male">MALE</span></div>
+            <table>
+                <thead>
+                    <tr>
+                        <th class="group-header-gt" colspan="2">Ground Truth</th>
+                        <th class="group-header-syn" colspan="2">Synthetic</th>
+                    </tr>
+                    <tr>
+                        <th class="sub-gt">Text</th>
+                        <th class="sub-gt-last">Audio</th>
+                        <th class="sub-syn">Text</th>
+                        <th class="sub-syn">Audio</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="text-cell" id="text-real-akzhol-0">—</td>
+                        <td class="border-right"><audio controls preload="none"><source src="real_speakers/akzhol/real_akzhol.wav" type="audio/wav"></audio></td>
+                        <td class="text-cell" id="text-pred-akzhol-0">—</td>
+                        <td><audio controls preload="none"><source src="pred_speakers/akzhol/pred_akzhol_0.wav" type="audio/wav"></audio></td>
+                    </tr>
+                    <tr>
+                        <td class="text-cell" id="text-real-akzhol-1">—</td>
+                        <td class="border-right"><audio controls preload="none"><source src="real_speakers/akzhol/real_akzhol_67.wav" type="audio/wav"></audio></td>
+                        <td class="text-cell" id="text-pred-akzhol-1">—</td>
+                        <td><audio controls preload="none"><source src="pred_speakers/akzhol/pred_akzhol_33.wav" type="audio/wav"></audio></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ALI -->
+        <div class="speaker-section" id="ali">
+            <div class="speaker-name male">Voice 2: Ali <span class="speaker-tag male">MALE</span></div>
+            <table>
+                <thead>
+                    <tr>
+                        <th class="group-header-gt" colspan="2">Ground Truth</th>
+                        <th class="group-header-syn" colspan="2">Synthetic</th>
+                    </tr>
+                    <tr>
+                        <th class="sub-gt">Text</th>
+                        <th class="sub-gt-last">Audio</th>
+                        <th class="sub-syn">Text</th>
+                        <th class="sub-syn">Audio</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="text-cell" id="text-real-ali-0">—</td>
+                        <td class="border-right"><audio controls preload="none"><source src="real_speakers/ali/real_ali.wav" type="audio/wav"></audio></td>
+                        <td class="text-cell" id="text-pred-ali-0">—</td>
+                        <td><audio controls preload="none"><source src="pred_speakers/ali/pred_ali_0.wav" type="audio/wav"></audio></td>
+                    </tr>
+                    <tr>
+                        <td class="text-cell" id="text-real-ali-1">—</td>
+                        <td class="border-right"><audio controls preload="none"><source src="real_speakers/ali/real_ali_67.wav" type="audio/wav"></audio></td>
+                        <td class="text-cell" id="text-pred-ali-1">—</td>
+                        <td><audio controls preload="none"><source src="pred_speakers/ali/pred_ali_33.wav" type="audio/wav"></audio></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ASSEL -->
+        <div class="speaker-section" id="assel">
+            <div class="speaker-name female">Voice 3: Assel <span class="speaker-tag female">FEMALE</span></div>
+            <table>
+                <thead>
+                    <tr>
+                        <th class="group-header-gt" colspan="2">Ground Truth</th>
+                        <th class="group-header-syn" colspan="2">Synthetic</th>
+                    </tr>
+                    <tr>
+                        <th class="sub-gt">Text</th>
+                        <th class="sub-gt-last">Audio</th>
+                        <th class="sub-syn">Text</th>
+                        <th class="sub-syn">Audio</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="text-cell" id="text-real-assel-0">—</td>
+                        <td class="border-right"><audio controls preload="none"><source src="real_speakers/assel/real_assel.wav" type="audio/wav"></audio></td>
+                        <td class="text-cell" id="text-pred-assel-0">—</td>
+                        <td><audio controls preload="none"><source src="pred_speakers/assel/pred_assel_0.wav" type="audio/wav"></audio></td>
+                    </tr>
+                    <tr>
+                        <td class="text-cell" id="text-real-assel-1">—</td>
+                        <td class="border-right"><audio controls preload="none"><source src="real_speakers/assel/real_assel_67.wav" type="audio/wav"></audio></td>
+                        <td class="text-cell" id="text-pred-assel-1">—</td>
+                        <td><audio controls preload="none"><source src="pred_speakers/assel/pred_assel_33.wav" type="audio/wav"></audio></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- BERIK -->
+        <div class="speaker-section" id="berik">
+            <div class="speaker-name male">Voice 4: Berik <span class="speaker-tag male">MALE</span></div>
+            <table>
+                <thead>
+                    <tr>
+                        <th class="group-header-gt" colspan="2">Ground Truth</th>
+                        <th class="group-header-syn" colspan="2">Synthetic</th>
+                    </tr>
+                    <tr>
+                        <th class="sub-gt">Text</th>
+                        <th class="sub-gt-last">Audio</th>
+                        <th class="sub-syn">Text</th>
+                        <th class="sub-syn">Audio</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="text-cell" id="text-real-berik-0">—</td>
+                        <td class="border-right"><audio controls preload="none"><source src="real_speakers/berik/real_berik.wav" type="audio/wav"></audio></td>
+                        <td class="text-cell" id="text-pred-berik-0">—</td>
+                        <td><audio controls preload="none"><source src="pred_speakers/berik/pred_berik_0.wav" type="audio/wav"></audio></td>
+                    </tr>
+                    <tr>
+                        <td class="text-cell" id="text-real-berik-1">—</td>
+                        <td class="border-right"><audio controls preload="none"><source src="real_speakers/berik/real_berik_67.wav" type="audio/wav"></audio></td>
+                        <td class="text-cell" id="text-pred-berik-1">—</td>
+                        <td><audio controls preload="none"><source src="pred_speakers/berik/pred_berik_33.wav" type="audio/wav"></audio></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- DUMAN -->
+        <div class="speaker-section" id="duman">
+            <div class="speaker-name male">Voice 5: Duman <span class="speaker-tag male">MALE</span></div>
+            <table>
+                <thead>
+                    <tr>
+                        <th class="group-header-gt" colspan="2">Ground Truth</th>
+                        <th class="group-header-syn" colspan="2">Synthetic</th>
+                    </tr>
+                    <tr>
+                        <th class="sub-gt">Text</th>
+                        <th class="sub-gt-last">Audio</th>
+                        <th class="sub-syn">Text</th>
+                        <th class="sub-syn">Audio</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="text-cell" id="text-real-duman-0">—</td>
+                        <td class="border-right"><audio controls preload="none"><source src="real_speakers/duman/real_duman.wav" type="audio/wav"></audio></td>
+                        <td class="text-cell" id="text-pred-duman-0">—</td>
+                        <td><audio controls preload="none"><source src="pred_speakers/duman/pred_duman_0.wav" type="audio/wav"></audio></td>
+                    </tr>
+                    <tr>
+                        <td class="text-cell" id="text-real-duman-1">—</td>
+                        <td class="border-right"><audio controls preload="none"><source src="real_speakers/duman/real_duman_68.wav" type="audio/wav"></audio></td>
+                        <td class="text-cell" id="text-pred-duman-1">—</td>
+                        <td><audio controls preload="none"><source src="pred_speakers/duman/pred_duman_33.wav" type="audio/wav"></audio></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- GULYA -->
+        <div class="speaker-section" id="gulya">
+            <div class="speaker-name female">Voice 6: Gulya <span class="speaker-tag female">FEMALE</span></div>
+            <table>
+                <thead>
+                    <tr>
+                        <th class="group-header-gt" colspan="2">Ground Truth</th>
+                        <th class="group-header-syn" colspan="2">Synthetic</th>
+                    </tr>
+                    <tr>
+                        <th class="sub-gt">Text</th>
+                        <th class="sub-gt-last">Audio</th>
+                        <th class="sub-syn">Text</th>
+                        <th class="sub-syn">Audio</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="text-cell" id="text-real-gulya-0">—</td>
+                        <td class="border-right"><audio controls preload="none"><source src="real_speakers/gulya/real_gulya.wav" type="audio/wav"></audio></td>
+                        <td class="text-cell" id="text-pred-gulya-0">—</td>
+                        <td><audio controls preload="none"><source src="pred_speakers/gulya/pred_gulya_0.wav" type="audio/wav"></audio></td>
+                    </tr>
+                    <tr>
+                        <td class="text-cell" id="text-real-gulya-1">—</td>
+                        <td class="border-right"><audio controls preload="none"><source src="real_speakers/gulya/real_gulya_67.wav" type="audio/wav"></audio></td>
+                        <td class="text-cell" id="text-pred-gulya-1">—</td>
+                        <td><audio controls preload="none"><source src="pred_speakers/gulya/pred_gulya_33.wav" type="audio/wav"></audio></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ISEKE -->
+        <div class="speaker-section" id="iseke">
+            <div class="speaker-name male">Voice 7: Iseke <span class="speaker-tag male">MALE</span></div>
+            <table>
+                <thead>
+                    <tr>
+                        <th class="group-header-gt" colspan="2">Ground Truth</th>
+                        <th class="group-header-syn" colspan="2">Synthetic</th>
+                    </tr>
+                    <tr>
+                        <th class="sub-gt">Text</th>
+                        <th class="sub-gt-last">Audio</th>
+                        <th class="sub-syn">Text</th>
+                        <th class="sub-syn">Audio</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="text-cell" id="text-real-iseke-0">—</td>
+                        <td class="border-right"><audio controls preload="none"><source src="real_speakers/iseke/real_iseke.wav" type="audio/wav"></audio></td>
+                        <td class="text-cell" id="text-pred-iseke-0">—</td>
+                        <td><audio controls preload="none"><source src="pred_speakers/iseke/pred_iseke_0.wav" type="audio/wav"></audio></td>
+                    </tr>
+                    <tr>
+                        <td class="text-cell" id="text-real-iseke-1">—</td>
+                        <td class="border-right"><audio controls preload="none"><source src="real_speakers/iseke/real_iseke_67.wav" type="audio/wav"></audio></td>
+                        <td class="text-cell" id="text-pred-iseke-1">—</td>
+                        <td><audio controls preload="none"><source src="pred_speakers/iseke/pred_iseke_33.wav" type="audio/wav"></audio></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- MADI -->
+        <div class="speaker-section" id="madi">
+            <div class="speaker-name male">Voice 8: Madi <span class="speaker-tag male">MALE</span></div>
+            <table>
+                <thead>
+                    <tr>
+                        <th class="group-header-gt" colspan="2">Ground Truth</th>
+                        <th class="group-header-syn" colspan="2">Synthetic</th>
+                    </tr>
+                    <tr>
+                        <th class="sub-gt">Text</th>
+                        <th class="sub-gt-last">Audio</th>
+                        <th class="sub-syn">Text</th>
+                        <th class="sub-syn">Audio</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="text-cell" id="text-real-madi-0">—</td>
+                        <td class="border-right"><audio controls preload="none"><source src="real_speakers/madi/real_madi.wav" type="audio/wav"></audio></td>
+                        <td class="text-cell" id="text-pred-madi-0">—</td>
+                        <td><audio controls preload="none"><source src="pred_speakers/madi/pred_madi_0.wav" type="audio/wav"></audio></td>
+                    </tr>
+                    <tr>
+                        <td class="text-cell" id="text-real-madi-1">—</td>
+                        <td class="border-right"><audio controls preload="none"><source src="real_speakers/madi/real_madi_69.wav" type="audio/wav"></audio></td>
+                        <td class="text-cell" id="text-pred-madi-1">—</td>
+                        <td><audio controls preload="none"><source src="pred_speakers/madi/pred_madi_33.wav" type="audio/wav"></audio></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- MADINA -->
+        <div class="speaker-section" id="madina">
+            <div class="speaker-name female">Voice 9: Madina <span class="speaker-tag female">FEMALE</span></div>
+            <table>
+                <thead>
+                    <tr>
+                        <th class="group-header-gt" colspan="2">Ground Truth</th>
+                        <th class="group-header-syn" colspan="2">Synthetic</th>
+                    </tr>
+                    <tr>
+                        <th class="sub-gt">Text</th>
+                        <th class="sub-gt-last">Audio</th>
+                        <th class="sub-syn">Text</th>
+                        <th class="sub-syn">Audio</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="text-cell" id="text-real-madina-0">—</td>
+                        <td class="border-right"><audio controls preload="none"><source src="real_speakers/madina/real_madina.wav" type="audio/wav"></audio></td>
+                        <td class="text-cell" id="text-pred-madina-0">—</td>
+                        <td><audio controls preload="none"><source src="pred_speakers/madina/pred_madina_0.wav" type="audio/wav"></audio></td>
+                    </tr>
+                    <tr>
+                        <td class="text-cell" id="text-real-madina-1">—</td>
+                        <td class="border-right"><audio controls preload="none"><source src="real_speakers/madina/real_madina_68.wav" type="audio/wav"></audio></td>
+                        <td class="text-cell" id="text-pred-madina-1">—</td>
+                        <td><audio controls preload="none"><source src="pred_speakers/madina/pred_madina_33.wav" type="audio/wav"></audio></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- MARZHAN -->
+        <div class="speaker-section" id="marzhan">
+            <div class="speaker-name female">Voice 10: Marzhan <span class="speaker-tag female">FEMALE</span></div>
+            <table>
+                <thead>
+                    <tr>
+                        <th class="group-header-gt" colspan="2">Ground Truth</th>
+                        <th class="group-header-syn" colspan="2">Synthetic</th>
+                    </tr>
+                    <tr>
+                        <th class="sub-gt">Text</th>
+                        <th class="sub-gt-last">Audio</th>
+                        <th class="sub-syn">Text</th>
+                        <th class="sub-syn">Audio</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="text-cell" id="text-real-marzhan-0">—</td>
+                        <td class="border-right"><audio controls preload="none"><source src="real_speakers/marzhan/real_marzhan.wav" type="audio/wav"></audio></td>
+                        <td class="text-cell" id="text-pred-marzhan-0">—</td>
+                        <td><audio controls preload="none"><source src="pred_speakers/marzhan/pred_marzhan_0.wav" type="audio/wav"></audio></td>
+                    </tr>
+                    <tr>
+                        <td class="text-cell" id="text-real-marzhan-1">—</td>
+                        <td class="border-right"><audio controls preload="none"><source src="real_speakers/marzhan/real_marzhan_67.wav" type="audio/wav"></audio></td>
+                        <td class="text-cell" id="text-pred-marzhan-1">—</td>
+                        <td><audio controls preload="none"><source src="pred_speakers/marzhan/pred_marzhan_33.wav" type="audio/wav"></audio></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- RAYA -->
+        <div class="speaker-section" id="raya">
+            <div class="speaker-name female">Voice 11: Raya <span class="speaker-tag female">FEMALE</span></div>
+            <table>
+                <thead>
+                    <tr>
+                        <th class="group-header-gt" colspan="2">Ground Truth</th>
+                        <th class="group-header-syn" colspan="2">Synthetic</th>
+                    </tr>
+                    <tr>
+                        <th class="sub-gt">Text</th>
+                        <th class="sub-gt-last">Audio</th>
+                        <th class="sub-syn">Text</th>
+                        <th class="sub-syn">Audio</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="text-cell" id="text-real-raya-0">—</td>
+                        <td class="border-right"><audio controls preload="none"><source src="real_speakers/raya/real_raya.wav" type="audio/wav"></audio></td>
+                        <td class="text-cell" id="text-pred-raya-0">—</td>
+                        <td><audio controls preload="none"><source src="pred_speakers/raya/pred_raya_0.wav" type="audio/wav"></audio></td>
+                    </tr>
+                    <tr>
+                        <td class="text-cell" id="text-real-raya-1">—</td>
+                        <td class="border-right"><audio controls preload="none"><source src="real_speakers/raya/real_raya_67.wav" type="audio/wav"></audio></td>
+                        <td class="text-cell" id="text-pred-raya-1">—</td>
+                        <td><audio controls preload="none"><source src="pred_speakers/raya/pred_raya_33.wav" type="audio/wav"></audio></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- SAULE -->
+        <div class="speaker-section" id="saule">
+            <div class="speaker-name female">Voice 12: Saule <span class="speaker-tag female">FEMALE</span></div>
+            <table>
+                <thead>
+                    <tr>
+                        <th class="group-header-gt" colspan="2">Ground Truth</th>
+                        <th class="group-header-syn" colspan="2">Synthetic</th>
+                    </tr>
+                    <tr>
+                        <th class="sub-gt">Text</th>
+                        <th class="sub-gt-last">Audio</th>
+                        <th class="sub-syn">Text</th>
+                        <th class="sub-syn">Audio</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="text-cell" id="text-real-saule-0">—</td>
+                        <td class="border-right"><audio controls preload="none"><source src="real_speakers/saule/real_saule.wav" type="audio/wav"></audio></td>
+                        <td class="text-cell" id="text-pred-saule-0">—</td>
+                        <td><audio controls preload="none"><source src="pred_speakers/saule/pred_saule_0.wav" type="audio/wav"></audio></td>
+                    </tr>
+                    <tr>
+                        <td class="text-cell" id="text-real-saule-1">—</td>
+                        <td class="border-right"><audio controls preload="none"><source src="real_speakers/saule/real_saule_67.wav" type="audio/wav"></audio></td>
+                        <td class="text-cell" id="text-pred-saule-1">—</td>
+                        <td><audio controls preload="none"><source src="pred_speakers/saule/pred_saule_33.wav" type="audio/wav"></audio></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </section>
+</div>
+
+<footer>
+    <div class="container">
+        <p>Anonymous submission to Interspeech 2026</p>
+    </div>
+</footer>
+
+<script>
+    // Real speaker file mapping: [base_txt, numbered_txt]
+    const realFiles = {
+        akzhol:  ['real_akzhol.txt',  'real_akzhol_67.txt'],
+        ali:     ['real_ali.txt',     'real_ali_67.txt'],
+        assel:   ['real_assel.txt',   'real_assel_67.txt'],
+        berik:   ['real_berik.txt',   'real_berik_67.txt'],
+        duman:   ['real_duman.txt',   'real_duman_68.txt'],
+        gulya:   ['real_gulya.txt',   'real_gulya_67.txt'],
+        iseke:   ['real_iseke.txt',   'real_iseke_67.txt'],
+        madi:    ['real_madi.txt',    'real_madi_69.txt'],
+        madina:  ['real_madina.txt',  'real_madina_68.txt'],
+        marzhan: ['real_marzhan.txt', 'real_marzhan_67.txt'],
+        raya:    ['real_raya.txt',    'real_raya_67.txt'],
+        saule:   ['real_saule.txt',   'real_saule_67.txt']
+    };
+
+    // Predicted speaker files: [pred_0.txt, pred_33.txt]
+    const predFiles = {
+        akzhol:  ['pred_akzhol_0.txt',  'pred_akzhol_33.txt'],
+        ali:     ['pred_ali_0.txt',     'pred_ali_33.txt'],
+        assel:   ['pred_assel_0.txt',   'pred_assel_33.txt'],
+        berik:   ['pred_berik_0.txt',   'pred_berik_33.txt'],
+        duman:   ['pred_duman_0.txt',   'pred_duman_33.txt'],
+        gulya:   ['pred_gulya_0.txt',   'pred_gulya_33.txt'],
+        iseke:   ['pred_iseke_0.txt',   'pred_iseke_33.txt'],
+        madi:    ['pred_madi_0.txt',    'pred_madi_33.txt'],
+        madina:  ['pred_madina_0.txt',  'pred_madina_33.txt'],
+        marzhan: ['pred_marzhan_0.txt', 'pred_marzhan_33.txt'],
+        raya:    ['pred_raya_0.txt',    'pred_raya_33.txt'],
+        saule:   ['pred_saule_0.txt',   'pred_saule_33.txt']
+    };
+
+    function loadText(cellId, url) {
+        fetch(url)
+            .then(r => { if (!r.ok) throw 0; return r.text(); })
+            .then(t => { document.getElementById(cellId).textContent = t.trim(); })
+            .catch(() => {});
+    }
+
+    Object.keys(realFiles).forEach(speaker => {
+        realFiles[speaker].forEach((file, i) => {
+            loadText(`text-real-${speaker}-${i}`, `real_speakers/${speaker}/${file}`);
+        });
+        predFiles[speaker].forEach((file, i) => {
+            loadText(`text-pred-${speaker}-${i}`, `pred_speakers/${speaker}/${file}`);
+        });
+    });
+</script>
+
+</body>
+</html>
