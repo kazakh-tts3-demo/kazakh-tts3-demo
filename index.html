@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KazakhTTS3: Extending the Open-Source KazakhTTS2 Corpus with Synthetic Voices and a Small TTS Baseline</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=Source+Sans+3:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #fafaf8;
+            --surface: #ffffff;
+            --text: #1a1a1a;
+            --text-secondary: #555;
+            --accent: #1a5276;
+            --accent-light: #2980b9;
+            --border: #e0ddd8;
+            --border-light: #eceae5;
+            --tag-bg: #eef4f8;
+            --tag-text: #1a5276;
+            --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.07);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Source Sans 3', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 16px;
+        }
+
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Header */
+        header {
+            padding: 60px 0 40px;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 48px;
+        }
+
+        h1 {
+            font-family: 'Source Serif 4', Georgia, serif;
+            font-size: 1.85rem;
+            font-weight: 700;
+            line-height: 1.35;
+            color: var(--text);
+            margin-bottom: 20px;
+            letter-spacing: -0.01em;
+        }
+
+        .authors {
+            font-size: 1.05rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            font-weight: 400;
+        }
+
+        .affiliation {
+            font-size: 0.92rem;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .links {
+            margin-top: 20px;
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .links a {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 20px;
+            border: 1.5px solid var(--accent);
+            border-radius: 6px;
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .links a:hover {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        /* Sections */
+        section {
+            margin-bottom: 48px;
+        }
+
+        h2 {
+            font-family: 'Source Serif 4', Georgia, serif;
+            font-size: 1.45rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 20px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--accent);
+            display: inline-block;
+        }
+
+        h3 {
+            font-family: 'Source Serif 4', Georgia, serif;
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--text);
+            margin: 32px 0 16px;
+        }
+
+        p {
+            margin-bottom: 16px;
+            color: var(--text);
+        }
+
+        .abstract {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--accent);
+            padding: 24px 28px;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.95rem;
+            line-height: 1.75;
+        }
+
+        .abstract strong {
+            font-family: 'Source Serif 4', Georgia, serif;
+            font-size: 1rem;
+        }
+
+        /* Table of Contents */
+        .toc {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px 28px;
+            margin-bottom: 40px;
+        }
+
+        .toc-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+        }
+
+        .toc ul {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 24px;
+        }
+
+        .toc a {
+            color: var(--accent-light);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .toc a:hover {
+            text-decoration: underline;
+        }
+
+        /* Speaker Tables */
+        .speaker-section {
+            margin-bottom: 40px;
+        }
+
+        .speaker-name {
+            font-family: 'Source Serif 4', Georgia, serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .speaker-tag {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            background: var(--tag-bg);
+            color: var(--tag-text);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            background: var(--surface);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+        }
+
+        thead th {
+            background: #f5f4f0;
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-secondary);
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        thead th:first-child {
+            width: 50px;
+            text-align: center;
+        }
+
+        tbody td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border-light);
+            vertical-align: middle;
+            font-size: 0.92rem;
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        tbody tr:hover {
+            background: #fafaf6;
+        }
+
+        tbody td:first-child {
+            text-align: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+        }
+
+        .text-cell {
+            line-height: 1.6;
+            color: var(--text);
+            max-width: 500px;
+        }
+
+        audio {
+            width: 220px;
+            height: 36px;
+        }
+
+        audio::-webkit-media-controls-panel {
+            background: #f8f8f6;
+        }
+
+        /* Note */
+        .note {
+            background: #fffbeb;
+            border: 1px solid #f0e4b8;
+            border-radius: 8px;
+            padding: 16px 20px;
+            font-size: 0.88rem;
+            color: #6b5a1e;
+            margin-bottom: 32px;
+        }
+
+        .note strong {
+            color: #4a3d10;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 40px 0;
+            border-top: 1px solid var(--border);
+            margin-top: 48px;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 { font-size: 1.4rem; }
+            .container { padding: 0 16px; }
+            header { padding: 40px 0 30px; }
+            audio { width: 180px; }
+            table { font-size: 0.85rem; }
+            thead th, tbody td { padding: 10px 10px; }
+            .text-cell { max-width: 280px; }
+        }
+
+        @media (max-width: 480px) {
+            audio { width: 140px; }
+            .text-cell { max-width: 200px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <header>
+        <h1>KazakhTTS3: Extending the Open-Source KazakhTTS2 Corpus with Synthetic Voices and a Small TTS Baseline</h1>
+        <p class="authors"><em>Anonymous submission to Interspeech 2025</em></p>
+        <!--
+        <p class="authors">Author 1, Author 2, Author 3</p>
+        <p class="affiliation">Institute of Smart Systems and Artificial Intelligence (ISSAI), Nazarbayev University</p>
+        -->
+        <div class="links">
+            <a href="#">📄 Paper</a>
+            <!-- <a href="#">💻 Code</a> -->
+            <!-- <a href="#">📦 Dataset</a> -->
+        </div>
+    </header>
+
+    <section id="abstract">
+        <h2>Abstract</h2>
+        <div class="abstract">
+            <p>
+                <!-- TODO: Replace with your actual abstract -->
+                We present KazakhTTS3, an extension of the open-source KazakhTTS2 corpus incorporating synthetic voices
+                generated by modern TTS systems. Our corpus includes 12 diverse speakers, expanding the available
+                Kazakh speech data for text-to-speech research. We additionally propose a small TTS baseline model
+                trained on this extended corpus, demonstrating that competitive speech synthesis quality can be achieved
+                even with compact model architectures. We evaluate our system through Mean Opinion Score (MOS) listening
+                tests and provide audio samples below.
+            </p>
+        </div>
+    </section>
+
+    <div class="toc">
+        <div class="toc-title">Contents</div>
+        <ul>
+            <li><a href="#abstract">Abstract</a></li>
+            <li><a href="#samples">Speech Samples</a></li>
+            <li><a href="#akzhol">Akzhol</a></li>
+            <li><a href="#ali">Ali</a></li>
+            <li><a href="#assel">Assel</a></li>
+            <li><a href="#berik">Berik</a></li>
+            <li><a href="#duman">Duman</a></li>
+            <li><a href="#gulya">Gulya</a></li>
+            <li><a href="#iseke">Iseke</a></li>
+            <li><a href="#madi">Madi</a></li>
+            <li><a href="#madina">Madina</a></li>
+            <li><a href="#marzhan">Marzhan</a></li>
+            <li><a href="#raya">Raya</a></li>
+            <li><a href="#saule">Saule</a></li>
+        </ul>
+    </div>
+
+    <section id="samples">
+        <h2>Speech Samples</h2>
+        <p>
+            Below we present synthesized speech samples from our 12-speaker KazakhTTS3 model.
+            For each speaker, we provide 3 sample utterances. All samples are generated by a single
+            multi-speaker TTS model.
+        </p>
+
+        <div class="note">
+            <strong>Note:</strong> This page is for research demonstration purposes only.
+            All audio samples are generated by our TTS system.
+        </div>
+
+        <!-- ===== AKZHOL ===== -->
+        <div class="speaker-section" id="akzhol">
+            <div class="speaker-name">
+                Speaker 1: Akzhol <span class="speaker-tag">MALE</span>
+            </div>
+            <table>
+                <thead>
+                    <tr><th>#</th><th>Text</th><th>Audio</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td class="text-cell" id="text-akzhol-0"><!-- Text loaded from file or fill manually --></td>
+                        <td><audio controls preload="none"><source src="speakers/akzhol/pred_akzhol_0.wav" type="audio/wav">Your browser does not support audio.</audio></td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td class="text-cell" id="text-akzhol-33"><!-- Text --></td>
+                        <td><audio controls preload="none"><source src="speakers/akzhol/pred_akzhol_33.wav" type="audio/wav">Your browser does not support audio.</audio></td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td class="text-cell" id="text-akzhol-67"><!-- Text --></td>
+                        <td><audio controls preload="none"><source src="speakers/akzhol/pred_akzhol_67.wav" type="audio/wav">Your browser does not support audio.</audio></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ===== ALI ===== -->
+        <div class="speaker-section" id="ali">
+            <div class="speaker-name">
+                Speaker 2: Ali <span class="speaker-tag">MALE</span>
+            </div>
+            <table>
+                <thead>
+                    <tr><th>#</th><th>Text</th><th>Audio</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td class="text-cell" id="text-ali-0"></td>
+                        <td><audio controls preload="none"><source src="speakers/ali/pred_ali_0.wav" type="audio/wav">Your browser does not support audio.</audio></td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td class="text-cell" id="text-ali-33"></td>
+                        <td><audio controls preload="none"><source src="speakers/ali/pred_ali_33.wav" type="audio/wav">Your browser does not support audio.</audio></td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td class="text-cell" id="text-ali-67"></td>
+                        <td><audio controls preload="none"><source src="speakers/ali/pred_ali_67.wav" type="audio/wav">Your browser does not support audio.</audio></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ===== ASSEL ===== -->
+        <div class="speaker-section" id="assel">
+            <div class="speaker-name">
+                Speaker 3: Assel <span class="speaker-tag">FEMALE</span>
+            </div>
+            <table>
+                <thead>
+                    <tr><th>#</th><th>Text</th><th>Audio</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td class="text-cell" id="text-assel-0"></td>
+                        <td><audio controls preload="none"><source src="speakers/assel/pred_assel_0.wav" type="audio/wav">Your browser does not support audio.</audio></td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td class="text-cell" id="text-assel-33"></td>
+                        <td><audio controls preload="none"><source src="speakers/assel/pred_assel_33.wav" type="audio/wav">Your browser does not support audio.</audio></td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td class="text-cell" id="text-assel-67"></td>
+                        <td><audio controls preload="none"><source src="speakers/assel/pred_assel_67.wav" type="audio/wav">Your browser does not support audio.</audio></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ===== BERIK ===== -->
+        <div class="speaker-section" id="berik">
+            <div class="speaker-name">
+                Speaker 4: Berik <span class="speaker-tag">MALE</span>
+            </div>
+            <table>
+                <thead>
+                    <tr><th>#</th><th>Text</th><th>Audio</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td class="text-cell" id="text-berik-0"></td>
+                        <td><audio controls preload="none"><source src="speakers/berik/pred_berik_0.wav" type="audio/wav">Your browser does not support audio.</audio></td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td class="text-cell" id="text-berik-33"></td>
+                        <td><audio controls preload="none"><source src="speakers/berik/pred_berik_33.wav" type="audio/wav">Your browser does not support audio.</audio></td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td class="text-cell" id="text-berik-67"></td>
+                        <td><audio controls preload="none"><source src="speakers/berik/pred_berik_67.wav" type="audio/wav">Your browser does not support audio.</audio></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ===== DUMAN ===== -->
+        <div class="speaker-section" id="duman">
+            <div class="speaker-name">
+                Speaker 5: Duman <span class="speaker-tag">MALE</span>
+            </div>
+            <table>
+                <thead>
+                    <tr><th>#</th><th>Text</th><th>Audio</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td class="text-cell" id="text-duman-0"></td>
+                        <td><audio controls preload="none"><source src="speakers/duman/pred_duman_0.wav" type="audio/wav">Your browser does not support audio.</audio></td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td class="text-cell" id="text-duman-33"></td>
+                        <td><audio controls preload="none"><source src="speakers/duman/pred_duman_33.wav" type="audio/wav">Your browser does not support audio.</audio></td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td class="text-cell" id="text-duman-67"></td>
+                        <td><audio controls preload="none"><source src="speakers/duman/pred_duman_67.wav" type="audio/wav">Your browser does not support audio.</audio></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ===== GULYA ===== -->
+        <div class="speaker-section" id="gulya">
+            <div class="speaker-name">
+                Speaker 6: Gulya <span class="speaker-tag">FEMALE</span>
+            </div>
+            <table>
+                <thead>
+                    <tr><th>#</th><th>Text</th><th>Audio</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td class="text-cell" id="text-gulya-0"></td>
+                        <td><audio controls preload="none"><source src="speakers/gulya/pred_gulya_0.wav" type="audio/wav">Your browser does not support audio.</audio></td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td class="text-cell" id="text-gulya-33"></td>
+                        <td><audio controls preload="none"><source src="speakers/gulya/pred_gulya_33.wav" type="audio/wav">Your browser does not support audio.</audio></td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td class="text-cell" id="text-gulya-67"></td>
+                        <td><audio controls preload="none"><source src="speakers/gulya/pred_gulya_67.wav" type="audio/wav">Your browser does not support audio.</audio></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ===== ISEKE ===== -->
+        <div class="speaker-section" id="iseke">
+            <div class="speaker-name">
+                Speaker 7: Iseke <span class="speaker-tag">MALE</span>
+            </div>
+            <table>
+                <thead>
+                    <tr><th>#</th><th>Text</th><th>Audio</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td class="text-cell" id="text-iseke-0"></td>
+                        <td><audio controls preload="none"><source src="speakers/iseke/pred_iseke_0.wav" type="audio/wav">Your browser does not support audio.</audio></td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td class="text-cell" id="text-iseke-33"></td>
+                        <td><audio controls preload="none"><source src="speakers/iseke/pred_iseke_33.wav" type="audio/wav">Your browser does not support audio.</audio></td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td class="text-cell" id="text-iseke-67"></td>
+                        <td><audio controls preload="none"><source src="speakers/iseke/pred_iseke_67.wav" type="audio/wav">Your browser does not support audio.</audio></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ===== MADI ===== -->
+        <div class="speaker-section" id="madi">
+            <div class="speaker-name">
+                Speaker 8: Madi <span class="speaker-tag">MALE</span>
+            </div>
+            <table>
+                <thead>
+                    <tr><th>#</th><th>Text</th><th>Audio</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td class="text-cell" id="text-madi-0"></td>
+                        <td><audio controls preload="none"><source src="speakers/madi/pred_madi_0.wav" type="audio/wav">Your browser does not support audio.</audio></td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td class="text-cell" id="text-madi-33"></td>
+                        <td><audio controls preload="none"><source src="speakers/madi/pred_madi_33.wav" type="audio/wav">Your browser does not support audio.</audio></td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td class="text-cell" id="text-madi-67"></td>
+                        <td><audio controls preload="none"><source src="speakers/madi/pred_madi_67.wav" type="audio/wav">Your browser does not support audio.</audio></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ===== MADINA ===== -->
+        <div class="speaker-section" id="madina">
+            <div class="speaker-name">
+                Speaker 9: Madina <span class="speaker-tag">FEMALE</span>
+            </div>
+            <table>
+                <thead>
+                    <tr><th>#</th><th>Text</th><th>Audio</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td class="text-cell" id="text-madina-0"></td>
+                        <td><audio controls preload="none"><source src="speakers/madina/pred_madina_0.wav" type="audio/wav">Your browser does not support audio.</audio></td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td class="text-cell" id="text-madina-33"></td>
+                        <td><audio controls preload="none"><source src="speakers/madina/pred_madina_33.wav" type="audio/wav">Your browser does not support audio.</audio></td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td class="text-cell" id="text-madina-67"></td>
+                        <td><audio controls preload="none"><source src="speakers/madina/pred_madina_67.wav" type="audio/wav">Your browser does not support audio.</audio></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ===== MARZHAN ===== -->
+        <div class="speaker-section" id="marzhan">
+            <div class="speaker-name">
+                Speaker 10: Marzhan <span class="speaker-tag">FEMALE</span>
+            </div>
+            <table>
+                <thead>
+                    <tr><th>#</th><th>Text</th><th>Audio</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td class="text-cell" id="text-marzhan-0"></td>
+                        <td><audio controls preload="none"><source src="speakers/marzhan/pred_marzhan_0.wav" type="audio/wav">Your browser does not support audio.</audio></td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td class="text-cell" id="text-marzhan-33"></td>
+                        <td><audio controls preload="none"><source src="speakers/marzhan/pred_marzhan_33.wav" type="audio/wav">Your browser does not support audio.</audio></td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td class="text-cell" id="text-marzhan-67"></td>
+                        <td><audio controls preload="none"><source src="speakers/marzhan/pred_marzhan_67.wav" type="audio/wav">Your browser does not support audio.</audio></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ===== RAYA ===== -->
+        <div class="speaker-section" id="raya">
+            <div class="speaker-name">
+                Speaker 11: Raya <span class="speaker-tag">FEMALE</span>
+            </div>
+            <table>
+                <thead>
+                    <tr><th>#</th><th>Text</th><th>Audio</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td class="text-cell" id="text-raya-0"></td>
+                        <td><audio controls preload="none"><source src="speakers/raya/pred_raya_0.wav" type="audio/wav">Your browser does not support audio.</audio></td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td class="text-cell" id="text-raya-33"></td>
+                        <td><audio controls preload="none"><source src="speakers/raya/pred_raya_33.wav" type="audio/wav">Your browser does not support audio.</audio></td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td class="text-cell" id="text-raya-67"></td>
+                        <td><audio controls preload="none"><source src="speakers/raya/pred_raya_67.wav" type="audio/wav">Your browser does not support audio.</audio></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ===== SAULE ===== -->
+        <div class="speaker-section" id="saule">
+            <div class="speaker-name">
+                Speaker 12: Saule <span class="speaker-tag">FEMALE</span>
+            </div>
+            <table>
+                <thead>
+                    <tr><th>#</th><th>Text</th><th>Audio</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td class="text-cell" id="text-saule-0"></td>
+                        <td><audio controls preload="none"><source src="speakers/saule/pred_saule_0.wav" type="audio/wav">Your browser does not support audio.</audio></td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td class="text-cell" id="text-saule-33"></td>
+                        <td><audio controls preload="none"><source src="speakers/saule/pred_saule_33.wav" type="audio/wav">Your browser does not support audio.</audio></td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td class="text-cell" id="text-saule-67"></td>
+                        <td><audio controls preload="none"><source src="speakers/saule/pred_saule_67.wav" type="audio/wav">Your browser does not support audio.</audio></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </section>
+
+</div>
+
+<footer>
+    <div class="container">
+        <p>This page is for research demonstration purposes only.</p>
+        <p>Anonymous submission to Interspeech 2025</p>
+    </div>
+</footer>
+
+<script>
+    // Auto-load text from .txt files for each speaker
+    const speakers = [
+        'akzhol', 'ali', 'assel', 'berik', 'duman', 'gulya',
+        'iseke', 'madi', 'madina', 'marzhan', 'raya', 'saule'
+    ];
+    const indices = [0, 33, 67];
+
+    speakers.forEach(speaker => {
+        indices.forEach(idx => {
+            const cellId = `text-${speaker}-${idx}`;
+            const txtPath = `speakers/${speaker}/pred_${speaker}_${idx}.txt`;
+            fetch(txtPath)
+                .then(r => {
+                    if (!r.ok) throw new Error('Not found');
+                    return r.text();
+                })
+                .then(text => {
+                    document.getElementById(cellId).textContent = text.trim();
+                })
+                .catch(() => {
+                    document.getElementById(cellId).textContent = '—';
+                    document.getElementById(cellId).style.color = '#aaa';
+                });
+        });
+    });
+</script>
+
+</body>
+</html>
