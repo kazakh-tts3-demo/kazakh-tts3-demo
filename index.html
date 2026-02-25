@@ -36,6 +36,28 @@
             border-bottom: 1px solid var(--border);
             margin-bottom: 48px;
         }
+        .corpus-figure{
+          margin-top: 22px;
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          box-shadow: var(--shadow);
+          padding: 14px;
+          text-align: center;
+        }
+        
+        .corpus-figure img{
+          max-width: 100%;
+          height: auto;
+          display: block;
+          margin: 0 auto;
+        }
+        
+        .corpus-figure figcaption{
+          margin-top: 10px;
+          font-size: 0.9rem;
+          color: var(--text-secondary);
+        }
         h1 { font-size: 1.75rem; font-weight: 700; line-height: 1.35; color: var(--text); margin-bottom: 20px; }
         .authors { font-size: 1.05rem; color: var(--text-secondary); margin-bottom: 8px; }
         .links { margin-top: 20px; display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
@@ -231,6 +253,15 @@
                 </tr>
             </tbody>
         </table>
+        <figure class="corpus-figure">
+          <img
+              src="./distribution.png"
+              alt="Distribution of segment durations and text lengths across speakers"
+              loading="lazy"
+              decoding="async"
+            />
+          <figcaption>Segment duration and transcript length distributions per speaker.</figcaption>
+        </figure>
     </section>
     <section id="samples">
         <h2>Speech Samples</h2>
